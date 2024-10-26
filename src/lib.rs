@@ -8,16 +8,26 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn setup(args: &[String]) -> Result<Config, &str> {
-        if args.len() < 3 {
-            return Err("Give at least two args");
-        }
-        let query = args[1].clone();
-        let filepath = args[2].clone();
+    pub fn setup(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        args.next();
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didnt give query string"),
+        };
+
+        let filepath = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didnt give filepath"),
+        };
 
         let ignore_case = env::var("IGNORE_CASE").is_ok();
 
-        Ok(Config { query, filepath, ignore_case })
+        Ok(Config {
+            query,
+            filepath,
+            ignore_case,
+        })
     }
 }
 
@@ -38,28 +48,17 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn search<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut result = Vec::new();
-
-    for line in content.lines() {
-        if line.contains(query) {
-            result.push(line);
-        }
-    }
-
-    result
+    content
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut result = Vec::new();
-
-    for line in content.lines() {
-        if line.to_lowercase().contains(&query.to_lowercase()) {
-            dbg!(line);
-            result.push(line);
-        }
-    }
-
-    result
+    content
+        .lines()
+        .filter(|line| line.to_lowercase().contains(&query.to_lowercase()))
+        .collect()
 }
 
 #[cfg(test)]
@@ -85,6 +84,9 @@ safe, fast, productive.
 Pick three.
 Trust me.";
 
-        assert_eq!(vec!["Rust:", "Trust me."], search_case_insensitive(query, content));
+        assert_eq!(
+            vec!["Rust:", "Trust me."],
+            search_case_insensitive(query, content)
+        );
     }
 }

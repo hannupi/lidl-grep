@@ -4,9 +4,7 @@ use std::process;
 use lidl_grep::Config;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let config = Config::setup(&args).unwrap_or_else(|err| {
+    let config = Config::setup(env::args()).unwrap_or_else(|err| {
         eprintln!("Failed to parse args: {err}");
         process::exit(1);
     });
